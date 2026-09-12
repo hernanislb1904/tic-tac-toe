@@ -4,7 +4,9 @@ Tic-tac-toe in the browser, styled like a game on the back page of a notebook. T
 
 ## Play
 
-Open `index.html` in any modern browser (double-click it). There's nothing to install and no build step.
+Play online at **https://hernanislb1904.github.io/tic-tac-toe/**
+
+Or open `index.html` in any modern browser (double-click it). There's nothing to install and no build step.
 
 ## Features
 
