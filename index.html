@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back-Page Tic-Tac-Toe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #F6F8F4;
+    --grid: #D5E1EC;
+    --margin: #E4A1A7;
+    --ink: #262B33;
+    --ink-soft: #5E6673;
+    --x: #1E4DB7;
+    --o: #C4302A;
+    --chip: #E8EEF3;
+    --chip-on: #262B33;
+    --chip-on-ink: #F6F8F4;
+    --focus: #1E4DB7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #131923;
+      --grid: #223047;
+      --margin: #7A3F4A;
+      --ink: #E4E8EE;
+      --ink-soft: #97A1B0;
+      --x: #86A9FF;
+      --o: #FF7F72;
+      --chip: #1D2635;
+      --chip-on: #E4E8EE;
+      --chip-on-ink: #131923;
+      --focus: #86A9FF;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #131923;
+    --grid: #223047;
+    --margin: #7A3F4A;
+    --ink: #E4E8EE;
+    --ink-soft: #97A1B0;
+    --x: #86A9FF;
+    --o: #FF7F72;
+    --chip: #1D2635;
+    --chip-on: #E4E8EE;
+    --chip-on-ink: #131923;
+    --focus: #86A9FF;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(to right, transparent 46px, var(--margin) 46px, var(--margin) 48px, transparent 48px),
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 100% 100%, 24px 24px, 24px 24px;
+    color: var(--ink);
+    font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    padding-block: 40px 56px;
+    padding-inline: 64px 24px;
+  }
+  @media (max-width: 520px) {
+    body {
+      padding-inline: 16px;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 24px 24px, 24px 24px;
+    }
+  }
+
+  .page {
+    max-width: 880px;
+    margin-inline: auto;
+    display: grid;
+    gap: 32px;
+  }
+  header { display: grid; gap: 4px; }
+  h1 {
+    font-family: "Shantell Sans", "Comic Sans MS", cursive;
+    font-weight: 800;
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    line-height: 1.05;
+    margin: 0;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  h1 .amp { color: var(--o); font-weight: 600; }
+  h1 .x { color: var(--x); }
+  .sub { margin: 0; color: var(--ink-soft); max-width: 52ch; }
+
+  .table {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 40px;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .table { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  }
+
+  .play { display: grid; gap: 16px; justify-items: center; }
+  .status {
+    font-family: "Shantell Sans", "Comic Sans MS", cursive;
+    font-weight: 600;
+    font-size: 1.5rem;
+    min-height: 2.25rem;
+    margin: 0;
+    text-align: center;
+  }
+  .status .tx { color: var(--x); }
+  .status .to { color: var(--o); }
+
+  .board {
+    position: relative;
+    width: min(100%, 440px);
+    aspect-ratio: 1;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+  .board svg.lines, .board svg.strike {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; overflow: visible;
+  }
+  .lines path {
+    fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round;
+    stroke-dasharray: 1; stroke-dashoffset: 1;
+    animation: draw 420ms ease-out forwards;
+  }
+  .lines path:nth-child(2) { animation-delay: 120ms; }
+  .lines path:nth-child(3) { animation-delay: 240ms; }
+  .lines path:nth-child(4) { animation-delay: 360ms; }
+  .strike path {
+    fill: none; stroke: var(--ink); stroke-width: 4.5; stroke-linecap: round;
+    stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .85;
+    animation: draw 380ms 120ms ease-in forwards;
+  }
+
+  .cell {
+    appearance: none; border: 0; background: transparent; padding: 14%;
+    cursor: pointer; border-radius: 10px; position: relative;
+    display: grid; place-items: stretch;
+  }
+  .cell:disabled { cursor: default; }
+  .cell:not(:disabled):hover::after {
+    content: ""; position: absolute; inset: 18%; border-radius: 50%;
+    background: var(--ghost, var(--x)); opacity: .08;
+  }
+  .cell:focus-visible { outline: 3px dashed var(--focus); outline-offset: -8px; }
+  .cell svg { width: 100%; height: 100%; overflow: visible; }
+  .cell path {
+    fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 1; stroke-dashoffset: 1;
+    animation: draw 220ms ease-out forwards;
+  }
+  .cell .mx path { stroke: var(--x); }
+  .cell .mx path + path { animation-delay: 190ms; }
+  .cell .mo path { stroke: var(--o); stroke-width: 6; animation-duration: 380ms; }
+  .cell.still path { animation: none; stroke-dashoffset: 0; }
+  .board.done .cell:not(.win) svg { opacity: .35; transition: opacity 400ms; }
+
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  .next {
+    font-family: "Shantell Sans", "Comic Sans MS", cursive;
+    font-weight: 600; font-size: 1.1rem;
+    color: var(--chip-on-ink); background: var(--chip-on);
+    border: 0; border-radius: 999px; padding: 10px 22px; cursor: pointer;
+    transition: transform 120ms;
+  }
+  .next:hover { transform: rotate(-1.5deg) scale(1.03); }
+  .next:focus-visible { outline: 3px dashed var(--focus); outline-offset: 3px; }
+
+  aside { display: grid; gap: 28px; }
+  .group { display: grid; gap: 8px; border: 0; margin: 0; padding: 0; min-width: 0; }
+  .label {
+    font-size: .75rem; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--ink-soft); padding: 0;
+  }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label {
+    cursor: pointer; padding: 6px 14px; border-radius: 999px;
+    background: var(--chip); color: var(--ink); font-weight: 700; font-size: .95rem;
+    border: 1.5px solid transparent;
+  }
+  .seg input:checked + label { background: var(--chip-on); color: var(--chip-on-ink); }
+  .seg input:focus-visible + label { border-color: var(--focus); border-style: dashed; }
+  .hint { margin: 0; font-size: .875rem; color: var(--ink-soft); }
+
+  .tally { display: grid; gap: 10px; }
+  .row {
+    display: grid; grid-template-columns: 5.5rem 1fr 2.5rem;
+    align-items: center; gap: 10px; min-height: 32px;
+  }
+  .row .who { font-family: "Shantell Sans", "Comic Sans MS", cursive; font-weight: 600; }
+  .row .who.x { color: var(--x); }
+  .row .who.o { color: var(--o); }
+  .row .marks { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+  .row .marks svg { height: 26px; width: auto; overflow: visible; }
+  .row .marks path { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; }
+  .row .n {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .9rem;
+    text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-soft);
+  }
+  .linkish {
+    justify-self: start; background: none; border: 0; padding: 0; cursor: pointer;
+    color: var(--ink-soft); font: inherit; font-size: .875rem;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .linkish:focus-visible { outline: 2px dashed var(--focus); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lines path, .strike path, .cell path { animation: none; stroke-dashoffset: 0; }
+    .next { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <h1><span class="x">Noughts</span> <span class="amp">&amp;</span> Crosses</h1>
+    <p class="sub">Tic-tac-toe, the way it was played on the back page of a notebook. Get three in a row, across, down or corner to corner.</p>
+  </header>
+
+  <section class="table">
+    <div class="play">
+      <p class="status" id="status" aria-live="polite">Your move</p>
+      <div class="board" id="board">
+        <svg class="lines" viewBox="0 0 300 300" aria-hidden="true" id="lines"></svg>
+        <svg class="strike" viewBox="0 0 300 300" aria-hidden="true" id="strike"></svg>
+      </div>
+      <button class="next" id="next" type="button" hidden>Next round</button>
+    </div>
+
+    <aside>
+      <fieldset class="group">
+        <legend class="label">Opponent</legend>
+        <div class="seg">
+          <input type="radio" name="mode" id="mode-cpu" value="cpu" checked><label for="mode-cpu">Computer</label>
+          <input type="radio" name="mode" id="mode-pvp" value="pvp"><label for="mode-pvp">A friend</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group" id="level-group">
+        <legend class="label">Computer plays</legend>
+        <div class="seg">
+          <input type="radio" name="level" id="level-easy" value="easy"><label for="level-easy">Sloppy</label>
+          <input type="radio" name="level" id="level-tricky" value="tricky" checked><label for="level-tricky">Tricky</label>
+          <input type="radio" name="level" id="level-perfect" value="perfect"><label for="level-perfect">Perfect</label>
+        </div>
+        <p class="hint" id="level-hint">Wins when it can, slips up now and then.</p>
+      </fieldset>
+
+      <div class="group">
+        <span class="label">Score</span>
+        <div class="tally" id="tally"></div>
+        <button class="linkish" id="reset" type="button">Rub out the score</button>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<script>
+(function () {
+  const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const HINTS = {
+    easy: "Mostly scribbles anywhere. Good for warming up.",
+    tricky: "Wins when it can, slips up now and then.",
+    perfect: "Never loses. The best you can get is a cat's game."
+  };
+  const $ = (id) => document.getElementById(id);
+  const boardEl = $("board"), statusEl = $("status"), nextBtn = $("next");
+  const strikeEl = $("strike"), tallyEl = $("tally");
+  const rnd = (a) => (Math.random() * 2 - 1) * a;
+
+  let state, cells = [], drawn = Array(9).fill(false), thinking = false, timer = null;
+
+  function freshState() {
+    return {
+      board: Array(9).fill(null),
+      starter: "X",
+      turn: "X",
+      mode: "cpu",
+      level: "tricky",
+      score: { X: 0, O: 0, draw: 0 },
+      result: null
+    };
+  }
+
+  function outcome(b) {
+    for (const l of LINES) {
+      const [a, c, d] = l;
+      if (b[a] && b[a] === b[c] && b[a] === b[d]) return { p: b[a], line: l };
+    }
+    return b.every(Boolean) ? { p: null } : null;
+  }
+
+  const other = (p) => (p === "X" ? "O" : "X");
+
+  function negamax(b, p, depth) {
+    const r = outcome(b);
+    if (r) return r.p === null ? 0 : (r.p === p ? 10 - depth : depth - 10);
+    let best = -Infinity;
+    for (let i = 0; i < 9; i++) {
+      if (b[i]) continue;
+      b[i] = p;
+      best = Math.max(best, -negamax(b, other(p), depth + 1));
+      b[i] = null;
+    }
+    return best;
+  }
+
+  function bestMoves(b, me) {
+    let top = -Infinity, moves = [];
+    for (let i = 0; i < 9; i++) {
+      if (b[i]) continue;
+      b[i] = me;
+      const s = -negamax(b, other(me), 1);
+      b[i] = null;
+      if (s > top) { top = s; moves = [i]; } else if (s === top) moves.push(i);
+    }
+    return moves;
+  }
+
+  function cpuPick() {
+    const b = state.board.slice();
+    const empties = b.map((v, i) => (v ? -1 : i)).filter((i) => i >= 0);
+    const skill = { easy: 0.2, tricky: 0.7, perfect: 1 }[state.level];
+    const pool = Math.random() < skill ? bestMoves(b, "O") : empties;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  /* ---------- hand-drawn marks ---------- */
+  function xMarkup() {
+    const j = () => rnd(5).toFixed(1);
+    return `<svg class="mx" viewBox="0 0 100 100" aria-hidden="true">
+      <path pathLength="1" d="M${10 + +j()} ${12 + +j()} Q${52 + +j()} ${46 + +j()} ${90 + +j()} ${88 + +j()}"/>
+      <path pathLength="1" d="M${88 + +j()} ${10 + +j()} Q${46 + +j()} ${52 + +j()} ${12 + +j()} ${90 + +j()}"/>
+    </svg>`;
+  }
+  function oMarkup() {
+    const start = Math.random() * Math.PI * 2, steps = 30, sweep = Math.PI * 2.12;
+    const rx = 40 + rnd(3), ry = 38 + rnd(3), tilt = rnd(0.25);
+    let d = "";
+    for (let k = 0; k <= steps; k++) {
+      const t = start - (sweep * k) / steps;
+      const wob = 1 + rnd(0.025) + (k / steps) * 0.06;
+      const x0 = Math.cos(t) * rx * wob, y0 = Math.sin(t) * ry * wob;
+      const x = 50 + x0 * Math.cos(tilt) - y0 * Math.sin(tilt);
+      const y = 50 + x0 * Math.sin(tilt) + y0 * Math.cos(tilt);
+      d += (k ? " L" : "M") + x.toFixed(1) + " " + y.toFixed(1);
+    }
+    return `<svg class="mo" viewBox="0 0 100 100" aria-hidden="true"><path pathLength="1" d="${d}"/></svg>`;
+  }
+
+  function gridLines() {
+    const j = () => rnd(4).toFixed(1);
+    $("lines").innerHTML = [
+      `M${100 + +j()} ${8 + +j()} Q${98 + +j()} 150 ${101 + +j()} ${292 + +j()}`,
+      `M${200 + +j()} ${10 + +j()} Q${202 + +j()} 150 ${199 + +j()} ${290 + +j()}`,
+      `M${8 + +j()} ${100 + +j()} Q150 ${102 + +j()} ${292 + +j()} ${99 + +j()}`,
+      `M${10 + +j()} ${200 + +j()} Q150 ${198 + +j()} ${290 + +j()} ${201 + +j()}`
+    ].map((d) => `<path pathLength="1" d="${d}"/>`).join("");
+  }
+
+  function strike(line) {
+    const c = (i) => [50 + (i % 3) * 100, 50 + Math.floor(i / 3) * 100];
+    const [ax, ay] = c(line[0]), [bx, by] = c(line[2]);
+    const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
+    const ex = (dx / len) * 34, ey = (dy / len) * 34;
+    const mx = (ax + bx) / 2 + rnd(6), my = (ay + by) / 2 + rnd(6);
+    strikeEl.innerHTML = `<path pathLength="1" d="M${(ax - ex).toFixed(1)} ${(ay - ey).toFixed(1)} Q${mx.toFixed(1)} ${my.toFixed(1)} ${(bx + ex).toFixed(1)} ${(by + ey).toFixed(1)}"/>`;
+  }
+
+  function tallySvg(n) {
+    const groups = [];
+    for (let g = 0; g < Math.ceil(Math.min(n, 20) / 5); g++) {
+      const count = Math.min(5, Math.min(n, 20) - g * 5);
+      let d = "";
+      for (let k = 0; k < Math.min(count, 4); k++) {
+        const x = 3 + k * 7;
+        d += `M${x} 3 L${x + 0.8} 25 `;
+      }
+      if (count === 5) d += "M-1 20 L28 7";
+      groups.push(`<svg viewBox="-2 0 32 28" aria-hidden="true"><path d="${d}"/></svg>`);
+    }
+    return groups.join("");
+  }
+
+  /* ---------- rendering ---------- */
+  function names() {
+    return state.mode === "cpu"
+      ? { X: "You", O: "Computer" }
+      : { X: "Crosses", O: "Noughts" };
+  }
+
+  function renderTally() {
+    const nm = names();
+    const rows = [
+      ["x", nm.X, state.score.X],
+      ["o", nm.O, state.score.O],
+      ["", "Cat's game", state.score.draw]
+    ];
+    tallyEl.innerHTML = rows.map(([cls, label, n]) =>
+      `<div class="row"><span class="who ${cls}">${label}</span><span class="marks">${tallySvg(n)}</span><span class="n">${n}</span></div>`
+    ).join("");
+  }
+
+  function renderStatus() {
+    const nm = names(), r = state.result;
+    const tag = (p) => `<span class="t${p.toLowerCase()}">${p}</span>`;
+    let html;
+    if (r && r.p === null) html = "Cat's game — nobody wins";
+    else if (r) {
+      if (state.mode === "cpu") html = r.p === "X" ? `You win! ${tag("X")}${tag("X")}${tag("X")}` : `Computer wins ${tag("O")}${tag("O")}${tag("O")}`;
+      else html = `${nm[r.p]} win — ${tag(r.p)}${tag(r.p)}${tag(r.p)}`;
+    } else if (state.mode === "cpu") {
+      html = state.turn === "X" ? `Your move, ${tag("X")}` : "Computer is thinking…";
+    } else {
+      html = `${nm[state.turn]} to play, ${tag(state.turn)}`;
+    }
+    statusEl.innerHTML = html;
+  }
+
+  function renderBoard(animate) {
+    const locked = !!state.result || thinking || (state.mode === "cpu" && state.turn === "O");
+    boardEl.classList.toggle("done", !!state.result);
+    boardEl.style.setProperty("--ghost", state.turn === "X" ? "var(--x)" : "var(--o)");
+    cells.forEach((cell, i) => {
+      const v = state.board[i];
+      if (v && !drawn[i]) {
+        cell.innerHTML = v === "X" ? xMarkup() : oMarkup();
+        cell.classList.toggle("still", !animate);
+        drawn[i] = true;
+      } else if (!v && drawn[i]) {
+        cell.innerHTML = ""; drawn[i] = false; cell.classList.remove("still");
+      }
+      cell.classList.toggle("win", !!(state.result && state.result.line && state.result.line.includes(i)));
+      cell.disabled = !state.result && (!!v || locked);
+      const pos = ["top", "middle", "bottom"][Math.floor(i / 3)] + " " + ["left", "centre", "right"][i % 3];
+      cell.setAttribute("aria-label", `${pos}: ${v || "empty"}`);
+    });
+    if (state.result && state.result.line) {
+      if (!strikeEl.firstChild) strike(state.result.line);
+    } else strikeEl.innerHTML = "";
+    nextBtn.hidden = !state.result;
+  }
+
+  function render(animate = true) {
+    renderBoard(animate);
+    renderStatus();
+    renderTally();
+    $("level-group").hidden = state.mode !== "cpu";
+    $("level-hint").textContent = HINTS[state.level];
+  }
+
+  /* ---------- game flow ---------- */
+  function place(i) {
+    if (state.board[i] || state.result) return;
+    state.board[i] = state.turn;
+    const r = outcome(state.board);
+    if (r) {
+      state.result = r;
+      if (r.p) state.score[r.p]++; else state.score.draw++;
+    } else {
+      state.turn = other(state.turn);
+    }
+    render();
+    maybeCpu();
+  }
+
+  function maybeCpu() {
+    if (state.mode !== "cpu" || state.result || state.turn !== "O" || thinking) return;
+    thinking = true;
+    renderBoard(true);
+    timer = setTimeout(() => {
+      thinking = false;
+      timer = null;
+      if (state.mode === "cpu" && state.turn === "O" && !state.result) place(cpuPick());
+    }, 420 + Math.random() * 300);
+  }
+
+  function newRound() {
+    clearTimeout(timer); timer = null; thinking = false;
+    const starter = other(state.starter);
+    state.board = Array(9).fill(null);
+    state.result = null;
+    state.starter = starter;
+    state.turn = starter;
+    gridLines();
+    render();
+    maybeCpu();
+  }
+
+  function start() {
+    state = freshState();
+    for (let i = 0; i < 9; i++) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "cell"; b.id = "cell-" + i;
+      b.addEventListener("click", () => {
+        if (state.result) { newRound(); return; }
+        if (state.mode === "cpu" && state.turn === "O") return;
+        place(i);
+      });
+      boardEl.appendChild(b);
+      cells.push(b);
+    }
+    $("mode-" + state.mode).checked = true;
+    $("level-" + state.level).checked = true;
+
+    document.querySelectorAll('input[name="mode"]').forEach((el) =>
+      el.addEventListener("change", () => {
+        state.mode = el.value;
+        state.score = { X: 0, O: 0, draw: 0 };
+        state.starter = "O";
+        newRound();
+      }));
+    document.querySelectorAll('input[name="level"]').forEach((el) =>
+      el.addEventListener("change", () => { state.level = el.value; render(); }));
+    nextBtn.addEventListener("click", newRound);
+    $("reset").addEventListener("click", () => {
+      state.score = { X: 0, O: 0, draw: 0 };
+      renderTally();
+    });
+
+    gridLines();
+    render(false);
+    maybeCpu();
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>
